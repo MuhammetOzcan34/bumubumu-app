@@ -34,4 +34,4 @@ COPY --from=builder /app/firebase-applet-config.json* ./
 
 EXPOSE 8080
 
-CMD ["npm", "start"]
+CMD ["node", "dist/server.cjs"]
