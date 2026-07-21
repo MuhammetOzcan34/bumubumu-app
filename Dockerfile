@@ -21,7 +21,7 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
-ENV PORT=3000
+ENV PORT=8080
 
 # Install production dependencies
 COPY package*.json ./
@@ -30,8 +30,8 @@ RUN npm ci --only=production
 # Copy built application assets
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/firebase-applet-config.jso[n] ./
+COPY --from=builder /app/firebase-applet-config.json* ./
 
-EXPOSE 3000
+EXPOSE 8080
 
 CMD ["node", "dist/server.cjs"]
