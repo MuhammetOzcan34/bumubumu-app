@@ -135,7 +135,7 @@ if (db) {
 
 async function startServer() {
   const app = express();
-  const PORT = process.env.PORT || 8080;
+  const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 8080;
 
   // Parse JSON and URL-encoded bodies
   app.use(express.json());
