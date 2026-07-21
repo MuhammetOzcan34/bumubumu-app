@@ -1,0 +1,366 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 1. Global Catch-All Safety Net (Default Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- GLOBAL YARDIMCI FONKSİYONLAR ---
+    function isSignedIn() {
+      return true;
+    }
+
+    function getUid() {
+      return request.auth != null ? request.auth.uid : "demo_guest_user";
+    }
+
+    function isOwner(userId) {
+      return (request.auth != null && request.auth.uid == userId) ||
+             (request.auth == null && userId == "demo_guest_user");
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Admin Rol Kontrolü: Güvenilir admins koleksiyonundaki kayda göre veya doğrulanmış belirli yönetici e-posta adreslerine göre bakarız.
+    function isAdmin() {
+      return request.auth != null && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        ('email' in request.auth.token && request.auth.token.email.lower() == "muhammet.ozcann83@gmail.com" && request.auth.token.email_verified == true)
+      );
+    }
+
+    // Üyelik kontrol yardımı (Null pointer hatası engelleme)
+    function isMemberOf(gId, uId) {
+      return exists(/databases/$(database)/documents/groups/$(gId)/members/$(uId));
+    }
+
+    // Kullanıcı oy kontrol yardımı (Null pointer hatası engelleme)
+    function hasVoted(pId, uId) {
+      return exists(/databases/$(database)/documents/posts/$(pId)/votes/$(uId));
+    }
+
+    // --- KOLEKSİYON KURALLARI ---
+
+    // 1. USERS: Kullanıcının özel hassas detayları
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if (isSignedIn() && isOwner(userId) &&
+        incoming().userId == userId &&
+        incoming().email is string &&
+        incoming().email.size() <= 128 &&
+        (
+          incoming().role == "user" || 
+          (incoming().role == "admin" && incoming().email.lower() == "muhammet.ozcann83@gmail.com")
+        ) &&
+        (incoming().points == 0 || incoming().points == 10) &&
+        incoming().createdAt == request.time) || isAdmin();
+      
+      // Kullanıcılar kendi profil detaylarından sadece yaş ve cinsiyet gibi alanları güncelleyebilir, puanları ve rolleri değiştiremez (Points güncellenebilir sponsorlu reklam ödülü için).
+      allow update: if isOwner(userId) && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['age', 'gender', 'displayName', 'photoURL', 'points', 'birthYear']) ||
+        (incoming().role == "admin" && existing().email.lower() == "muhammet.ozcann83@gmail.com" && incoming().diff(existing()).affectedKeys().hasOnly(['role'])) ||
+        isAdmin()
+      );
+      
+      allow delete: if isAdmin();
+
+      // Kullanıcının oy kullandığı gönderilerin ID listesi (votedPosts alt koleksiyonu)
+      match /votedPosts/{postId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow create: if isOwner(userId) &&
+          incoming().postId == postId &&
+          (incoming().votedOption == "A" || incoming().votedOption == "B");
+        allow delete: if isOwner(userId) || isAdmin();
+      }
+    }
+
+    // ADMINS: Sadece sistem yönetimi
+    match /admins/{userId} {
+      allow read: if isSignedIn();
+      allow write: if false; // Sadece Firebase Console üzerinden manuel atanabilir.
+    }
+
+    // 2. PROFILES: Kamuya açık profiller
+    match /profiles/{userId} {
+      allow read: if isSignedIn();
+      allow create, update: if (isOwner(userId) &&
+        (!('userId' in incoming()) || incoming().userId == userId) &&
+        incoming().displayName is string &&
+        incoming().displayName.size() <= 50) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // 2b. MEMBERS COLLECTION GROUP: To support collectionGroup queries for user memberships securely
+    match /{path=**}/members/{memberId} {
+      allow read: if request.auth != null && (
+        memberId == request.auth.uid || 
+        resource.data.userId == request.auth.uid || 
+        isAdmin()
+      );
+    }
+
+    // 3. GROUPS: Özel kapalı devre gruplar
+    match /groups/{groupId} {
+      function isGroupMember(gId) {
+        return isMemberOf(gId, getUid());
+      }
+
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(groupId) &&
+        incoming().groupId == groupId &&
+        incoming().creatorId == getUid() &&
+        incoming().name is string &&
+        incoming().name.size() <= 80 &&
+        incoming().createdAt == request.time;
+        
+      allow update: if isSignedIn() && (
+        (existing().creatorId == getUid() && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'description'])) ||
+        isAdmin()
+      );
+      allow delete: if isSignedIn() && (existing().creatorId == getUid() || isAdmin());
+
+      // GROUPS SUBCOLLECTION - MEMBERS
+      match /members/{memberId} {
+        allow read: if isSignedIn() && (
+          (request.auth != null && (memberId == request.auth.uid || (resource != null && 'userId' in resource.data && resource.data.userId == request.auth.uid))) ||
+          (request.auth == null && (memberId == "demo_guest_user" || (resource != null && 'userId' in resource.data && resource.data.userId == "demo_guest_user"))) ||
+          isGroupMember(groupId) ||
+          isAdmin()
+        );
+        // Grubu kuran üye ekleyebilir, ya da kişi kendini ekleyebilir (grup katılımı)
+        allow create: if isSignedIn() && isValidId(memberId) &&
+          incoming().userId == memberId &&
+          incoming().joinedAt == request.time &&
+          (memberId == getUid() || get(/databases/$(database)/documents/groups/$(groupId)).data.creatorId == getUid());
+          
+        allow delete: if isSignedIn() && (
+          memberId == getUid() || 
+          get(/databases/$(database)/documents/groups/$(groupId)).data.creatorId == getUid() || 
+          isAdmin()
+        );
+      }
+    }
+
+    // 4. POSTS: BUMUBUMU gönderileri (İkili karşılaştırma)
+    match /posts/{postId} {
+      function isPostReadable() {
+        return !('groupId' in resource.data) ||
+               resource.data.groupId == "" || 
+               resource.data.groupId == "global" || 
+               (('isSponsored' in resource.data) && resource.data.isSponsored == true) ||
+               (isSignedIn() && isMemberOf(resource.data.groupId, getUid()));
+      }
+
+      allow read: if isPostReadable() || isAdmin();
+      
+      allow create: if isSignedIn() && isValidId(postId) &&
+        incoming().postId == postId &&
+        incoming().creatorId == getUid() &&
+        incoming().title is string && incoming().title.size() <= 150 &&
+        incoming().optionAUrl is string && incoming().optionBUrl is string &&
+        incoming().voteCountA == 0 &&
+        incoming().voteCountB == 0 &&
+        incoming().totalVotes == 0 &&
+        incoming().status == "active" &&
+        incoming().createdAt == request.time &&
+        (
+          !('groupId' in incoming()) ||
+          incoming().groupId == "" ||
+          incoming().groupId == "global" ||
+          isMemberOf(incoming().groupId, getUid())
+        );
+
+      // Oylama veya gönderiyi bitirme (veya Admin müdahalesi)
+      allow update: if isSignedIn() && (
+        isAdmin() ||
+        // Senaryo A: Oylama. Kullanıcı oylama yaparken voteCount ve totalVotes sayacını artırmalı ve MUST create /posts/{postId}/votes/uId in same batch!
+        (
+          existing().status == "active" &&
+          isPostReadable() &&
+          incoming().diff(existing()).affectedKeys().hasAny(['voteCountA', 'voteCountB', 'totalVotes']) &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['voteCountA', 'voteCountB', 'totalVotes']) &&
+          (
+            (request.auth != null && existsAfter(/databases/$(database)/documents/posts/$(postId)/votes/$(request.auth.uid))) ||
+            (request.auth == null && existsAfter(/databases/$(database)/documents/posts/$(postId)/votes/demo_guest_user))
+          )
+        ) ||
+        // Senaryo C: Oylamayı Geri Alma. Kullanıcı oyunu çekerken ve dökümanını silerken sayaçları azaltabilir.
+        (
+          existing().status == "active" &&
+          isPostReadable() &&
+          incoming().diff(existing()).affectedKeys().hasAny(['voteCountA', 'voteCountB', 'totalVotes']) &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['voteCountA', 'voteCountB', 'totalVotes']) &&
+          (
+            (request.auth != null && !existsAfter(/databases/$(database)/documents/posts/$(postId)/votes/$(request.auth.uid))) ||
+            (request.auth == null && !existsAfter(/databases/$(database)/documents/posts/$(postId)/votes/demo_guest_user))
+          )
+        ) ||
+        // Senaryo B: Kapanış / Kazananı İlan Etme
+        (
+          existing().creatorId == getUid() &&
+          existing().status == "active" &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['status', 'winnerOption']) &&
+          incoming().status == "ended" &&
+          (incoming().winnerOption == "A" || incoming().winnerOption == "B" || incoming().winnerOption == "draw")
+        ) ||
+        // Senaryo D: Shard Aggregation. Arka plan temizliği ve birleştirme süreci.
+        (
+          existing().status == "active" &&
+          isPostReadable() &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['voteCountA', 'voteCountB', 'totalVotes'])
+        )
+      );
+
+      allow delete: if isSignedIn() && (resource.data.creatorId == getUid() || isAdmin());
+
+      // POSTS SUBCOLLECTION - VOTES (Mükerrer oy engelli, döküman adı userId olmalı!)
+      match /votes/{userId} {
+        allow read: if isSignedIn();
+        allow create: if isSignedIn() && userId == getUid() &&
+          incoming().userId == userId &&
+          incoming().votedAt == request.time &&
+          (incoming().votedOption == "A" || incoming().votedOption == "B");
+        allow delete: if isSignedIn() && (userId == getUid() || isAdmin());
+      }
+
+      // POSTS SUBCOLLECTION - SHARDS (Sharded Counter)
+      match /shards/{shardId} {
+        allow read: if isSignedIn();
+        allow write: if isSignedIn() && isValidId(shardId);
+      }
+
+      // POSTS SUBCOLLECTION - COMMENTS (Bölünmüş Yorumlar)
+      match /comments/{commentId} {
+        allow read: if isSignedIn();
+        // Yorum yapabilmek için kullanıcının kesinlikle o gönderide oy kullanmış olması veya gönderinin kendisi tarafından oluşturulmuş olması gerekir.
+        allow create: if isSignedIn() && isValidId(commentId) &&
+          incoming().commentId == commentId &&
+          incoming().postId == postId &&
+          incoming().userId == getUid() &&
+          incoming().createdAt == request.time &&
+          incoming().text is string && incoming().text.size() <= 300 &&
+          (
+            hasVoted(postId, getUid()) ||
+            get(/databases/$(database)/documents/posts/$(postId)).data.creatorId == getUid()
+          );
+        allow delete: if isSignedIn() && (resource.data.userId == getUid() || isAdmin());
+      }
+    }
+
+    // 5. CHATS: DM Odaları
+    match /chats/{chatId} {
+      allow read: if isSignedIn() && (
+        resource == null ||
+        !("participantIds" in resource.data) ||
+        (getUid() in resource.data.participantIds) ||
+        isAdmin()
+      );
+      allow create: if isSignedIn() && isValidId(chatId) &&
+        getUid() in incoming().participantIds &&
+        incoming().participantIds.size() == 2 &&
+        incoming().chatId == chatId &&
+        incoming().lastMessageAt == request.time;
+        
+      allow update: if isSignedIn() && (getUid() in resource.data.participantIds) &&
+        incoming().diff(existing()).affectedKeys().hasAny(['lastMessage', 'lastMessageAt', 'lastSenderId']);
+      allow delete: if isAdmin();
+
+      // CHATS SUBCOLLECTION - MESSAGES
+      match /messages/{messageId} {
+        allow read: if isSignedIn() && (
+          (request.auth != null && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participantIds) ||
+          (request.auth == null && "demo_guest_user" in get(/databases/$(database)/documents/chats/$(chatId)).data.participantIds) ||
+          isAdmin()
+        );
+        allow create: if isSignedIn() && isValidId(messageId) &&
+          incoming().messageId == messageId &&
+          incoming().senderId == getUid() &&
+          incoming().text is string && incoming().text.size() <= 500 &&
+          (getUid() in get(/databases/$(database)/documents/chats/$(chatId)).data.participantIds);
+        allow delete: if isAdmin();
+      }
+    }
+
+    // 6. TAGS: Gündem Popüler Kelimeler Sayacı
+    match /tags/{tag} {
+      allow read: if true; // Gündem etiketleri her zaman herkese açık ve okunabilir
+      allow create: if isSignedIn() &&
+        incoming().tag == tag &&
+        incoming().count == 1 &&
+        incoming().updatedAt == request.time;
+      allow update: if isSignedIn() &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['count', 'updatedAt']) &&
+        incoming().count == existing().count + 1 &&
+        incoming().updatedAt == request.time;
+      allow delete: if isAdmin();
+    }
+
+    // 7. STORIES: Paylaşılan hikaye oylamaları
+    function isValidStory(data) {
+      return data.postId is string &&
+             data.userId == getUid() &&
+             data.userName is string &&
+             data.optionAUrl is string &&
+             data.optionBUrl is string &&
+             data.title is string;
+    }
+
+    match /stories/{storyId} {
+      allow read: if true;
+      allow create: if isSignedIn() && isValidId(storyId) &&
+        isValidStory(incoming()) &&
+        incoming().createdAt == request.time;
+      allow delete: if isAdmin() || (isSignedIn() && resource.data.userId == getUid());
+    }
+
+    // 8. FOLLOWS: Takip Etme / Takipleşme Sistemi
+    match /follows/{followId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() &&
+        incoming().followerId == getUid() &&
+        followId == (getUid() + "_" + incoming().followingId);
+      allow delete: if isSignedIn() && (
+        resource.data.followerId == getUid() ||
+        resource.data.followingId == getUid() ||
+        isAdmin()
+      );
+    }
+
+    // 9. NOTIFICATIONS: Kullanıcı bildirim sistemi
+    match /notifications/{notificationId} {
+      allow read: if true;
+      allow create: if isSignedIn() &&
+        (request.auth == null || incoming().senderId == getUid()) &&
+        incoming().recipientId != incoming().senderId; // Kendisine bildirim gönderemez
+      allow update: if isSignedIn() && (
+        (resource.data.recipientId == getUid() &&
+         incoming().diff(existing()).affectedKeys().hasOnly(['read']) &&
+         incoming().read == true) ||
+        ((request.auth == null || (resource.data.senderId == getUid() && incoming().senderId == getUid())) &&
+         incoming().recipientId != incoming().senderId)
+      );
+      allow delete: if isSignedIn() && (resource.data.recipientId == getUid() || resource.data.senderId == getUid() || isAdmin());
+    }
+
+    // 10. SYSTEM_STATS: Trend and statistics collection
+    match /system_stats/{statsId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && statsId == "global_trends" &&
+        incoming().keys().hasOnly(['trends', 'top_all_time']) &&
+        incoming().trends is list &&
+        incoming().top_all_time is list;
+    }
+  }
+}

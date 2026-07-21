@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="tr" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>BumuBumu</title>
+    
+    <!-- PWA & Mobile Optimization -->
+    <meta name="theme-color" content="#E1306C" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="BumuBumu" />
+    
+    <!-- Favicon & Touch Icon -->
+    <link rel="icon" type="image/png" href="/logo_v5.png" />
+    <link rel="apple-touch-icon" href="/logo_v5.png" />
+    
+    <!-- Web App Manifest -->
+    <link rel="manifest" href="/manifest.json?v=6" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Register Service Worker -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then((reg) => {
+              console.log('BumuBumu SW Registered successfully:', reg.scope);
+              // Force checking for updates immediately on load
+              reg.update().catch(() => {});
+            })
+            .catch((err) => {
+              console.error('BumuBumu SW Registration failed:', err);
+            });
+        });
+      }
+    </script>
+  </body>
+</html>
+

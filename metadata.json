@@ -1,0 +1,6 @@
+{
+  "name": "BumuBumu",
+  "description": "Bilinçli karşılaştırmalar, oylamalar ve bölünmüş yorum kürsüsü ile BumuBumu karşılaştırma platformu.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

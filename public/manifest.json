@@ -1,0 +1,28 @@
+{
+  "name": "BumuBumu",
+  "short_name": "BumuBumu",
+  "description": "Karşılaştır, Oy Ver, Karar Al!",
+  "start_url": "/",
+  "id": "/",
+  "display": "standalone",
+  "background_color": "#090312",
+  "theme_color": "#E1306C",
+  "orientation": "portrait",
+  "scope": "/",
+  "categories": ["social", "entertainment"],
+  "gcm_sender_id": "103953800507",
+  "icons": [
+    {
+      "src": "/logo_v5.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo_v5.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

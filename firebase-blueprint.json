@@ -1,0 +1,618 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Kullanıcıya özel hassas ve özel bilgiler (sadece sahibi ve admin okuyabilir). Isolate edilmiştir.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Kullanıcı Firebase UID"
+        },
+        "email": {
+          "type": "string",
+          "description": "E-posta adresi"
+        },
+        "role": {
+          "type": "string",
+          "enum": ["user", "admin"],
+          "description": "Kullanıcı rolü"
+        },
+        "points": {
+          "type": "number",
+          "description": "Platform içi kazanılan ödül puanları"
+        },
+        "age": {
+          "type": "number",
+          "description": "Kullanıcı yaşı"
+        },
+        "gender": {
+          "type": "string",
+          "description": "Kullanıcı cinsiyeti"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Hesap oluşturma tarihi"
+        }
+      },
+      "required": ["userId", "email", "role", "points", "createdAt"]
+    },
+    "Profile": {
+      "title": "Profile",
+      "description": "Herkes tarafından okunabilen kamuya açık kullanıcı profili.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Kullanıcı Firebase UID"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Görünen Ad"
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "Profil resmi URL"
+        },
+        "bio": {
+          "type": "string",
+          "description": "Biyografi"
+        },
+        "location": {
+          "type": "string",
+          "description": "Kullanıcı şehri/semti"
+        }
+      },
+      "required": ["userId", "displayName"]
+    },
+    "Group": {
+      "title": "Group",
+      "description": "Kullanıcıların kendi aralarında oylama yapabileceği özel gruplar.",
+      "type": "object",
+      "properties": {
+        "groupId": {
+          "type": "string",
+          "description": "Grup ID"
+        },
+        "name": {
+          "type": "string",
+          "description": "Grup adı"
+        },
+        "description": {
+          "type": "string",
+          "description": "Grup açıklaması"
+        },
+        "creatorId": {
+          "type": "string",
+          "description": "Grubu kuran kişi ID"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Grup oluşturulma tarihi"
+        }
+      },
+      "required": ["groupId", "name", "creatorId", "createdAt"]
+    },
+    "GroupMember": {
+      "title": "GroupMember",
+      "description": "Özel gruplardaki üyeler (subcollection).",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Kullanıcı ID"
+        },
+        "role": {
+          "type": "string",
+          "enum": ["owner", "member"],
+          "description": "Rolü"
+        },
+        "joinedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Grup katılım tarihi"
+        }
+      },
+      "required": ["userId", "role", "joinedAt"]
+    },
+    "Post": {
+      "title": "Post",
+      "description": "Mali ve görsel karşılaştırmalar içeren BUMUBUMU gönderisi.",
+      "type": "object",
+      "properties": {
+        "postId": {
+          "type": "string",
+          "description": "Gönderi ID"
+        },
+        "creatorId": {
+          "type": "string",
+          "description": "Oluşturan kullanıcı ID"
+        },
+        "creatorName": {
+          "type": "string",
+          "description": "Oluşturan görünen adı"
+        },
+        "creatorPhoto": {
+          "type": "string",
+          "description": "Oluşturan profil fotoğrafı"
+        },
+        "title": {
+          "type": "string",
+          "description": "Gönderi başlığı veya sorusu"
+        },
+        "optionALabel": {
+          "type": "string",
+          "description": "Sol/Üst seçenek etiketi (örneğin 'Bu')"
+        },
+        "optionBLabel": {
+          "type": "string",
+          "description": "Sağ/Alt seçenek etiketi (örneğin 'Şu')"
+        },
+        "optionAUrl": {
+          "type": "string",
+          "description": "Görsel A URL (Storage veya Sıkıştırılmış Data URI)"
+        },
+        "optionBUrl": {
+          "type": "string",
+          "description": "Görsel B URL (Storage veya Sıkıştırılmış Data URI)"
+        },
+        "layout": {
+          "type": "string",
+          "enum": ["side-by-side", "stacked"],
+          "description": "Düzen biçimi (Yan yana veya Alt alta)"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Oluşturulma tarihi"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Oylama bitiş tarihi"
+        },
+        "voteCountA": {
+          "type": "number",
+          "description": "A seçeneğine verilen toplam oy"
+        },
+        "voteCountB": {
+          "type": "number",
+          "description": "B seçeneğine verilen toplam oy"
+        },
+        "totalVotes": {
+          "type": "number",
+          "description": "Toplam oy sayısı"
+        },
+        "tags": {
+          "type": "array",
+          "description": "Gönderi hashtag listesi"
+        },
+        "location": {
+          "type": "string",
+          "description": "Şehir / İlçe bilgisi"
+        },
+        "groupId": {
+          "type": "string",
+          "description": "Bağlı olduğu özel grup ID (varsa)"
+        },
+        "isSponsored": {
+          "type": "boolean",
+          "description": "Sponsorlu gönderi olup olmadığı"
+        },
+        "targetGender": {
+          "type": "string",
+          "description": "Hedef kitle cinsiyeti (Admin panelinden)"
+        },
+        "targetLocation": {
+          "type": "string",
+          "description": "Hedef kitle konumu"
+        },
+        "targetAgeMin": {
+          "type": "number",
+          "description": "Hedef kitle minimum yaş"
+        },
+        "targetAgeMax": {
+          "type": "number",
+          "description": "Hedef kitle maksimum yaş"
+        },
+        "rewardPoints": {
+          "type": "number",
+          "description": "Sponsorlu oylamada verilecek platform puanı"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "ended"],
+          "description": "Oylama durumu"
+        },
+        "winnerOption": {
+          "type": "string",
+          "description": "Bitişte kazanan seçenek (A, B, draw)"
+        }
+      },
+      "required": ["postId", "creatorId", "title", "optionAUrl", "optionBUrl", "layout", "createdAt", "voteCountA", "voteCountB", "totalVotes", "status"]
+    },
+    "Vote": {
+      "title": "Vote",
+      "description": "Bir post için verilen oy kaydı (mükerrer oylamayı engellemek için userId döküman adıdır).",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Oy veren kullanıcı ID"
+        },
+        "votedOption": {
+          "type": "string",
+          "enum": ["A", "B"],
+          "description": "Verilen oy ('A' veya 'B')"
+        },
+        "votedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Oy kullanma zamanı"
+        }
+      },
+      "required": ["userId", "votedOption", "votedAt"]
+    },
+    "Comment": {
+      "title": "Comment",
+      "description": "Soldakini ve sağdakini seçenler olarak ayrışan bölünmüş yorumlar.",
+      "type": "object",
+      "properties": {
+        "commentId": {
+          "type": "string",
+          "description": "Yorum ID"
+        },
+        "postId": {
+          "type": "string",
+          "description": "Yorum yapılan gönderi"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Yazan üye"
+        },
+        "userName": {
+          "type": "string",
+          "description": "Yazan üyenin giden görünen adı"
+        },
+        "userPhoto": {
+          "type": "string",
+          "description": "Yazan üyenin giden profil resmi"
+        },
+        "votedOption": {
+          "type": "string",
+          "enum": ["A", "B"],
+          "description": "Kullanıcının bu gönderide oyladığı seçenek (Arayüzde bölünme için)"
+        },
+        "text": {
+          "type": "string",
+          "description": "Yorum içeriği"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Oluşturulma tarihi"
+        }
+      },
+      "required": ["commentId", "postId", "userId", "userName", "votedOption", "text", "createdAt"]
+    },
+    "ChatRoom": {
+      "title": "ChatRoom",
+      "description": "İki kullanıcı arasındaki özel mesajlaşma odası.",
+      "type": "object",
+      "properties": {
+        "chatId": {
+          "type": "string",
+          "description": "Oda ID (A_B şeklinde sıralanmış id)"
+        },
+        "participantIds": {
+          "type": "array",
+          "description": "Katılımcıların listesi"
+        },
+        "lastMessage": {
+          "type": "string",
+          "description": "Son gönderilen mesaj"
+        },
+        "lastMessageAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Son mesajın tarihi"
+        },
+        "lastSenderId": {
+          "type": "string",
+          "description": "Son mesajı gönderen kişinin ID'si"
+        }
+      },
+      "required": ["chatId", "participantIds", "lastMessage", "lastMessageAt", "lastSenderId"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "Direkt mesajlaşma oda içindeki anlık mesajlar.",
+      "type": "object",
+      "properties": {
+        "messageId": {
+          "type": "string",
+          "description": "Mesaj ID"
+        },
+        "senderId": {
+          "type": "string",
+          "description": "Gönderen kullanıcı ID"
+        },
+        "senderName": {
+          "type": "string",
+          "description": "Gönderen bizzat giden adı"
+        },
+        "text": {
+          "type": "string",
+          "description": "Mesaj metni"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Gönderilme tarihi"
+        },
+        "postId": {
+          "type": "string",
+          "description": "İçerisinde interaktif oylama kartı render ettiren referans post Id (varsa)"
+        }
+      },
+      "required": ["messageId", "senderId", "senderName", "text", "createdAt"]
+    },
+    "Tag": {
+      "title": "Tag",
+      "description": "Gündem sekmesinde Top 10 hashtag listelemek için favoriler sayacı.",
+      "type": "object",
+      "properties": {
+        "tag": {
+          "type": "string",
+          "description": "Etiket adı (# olmadan veya ile)"
+        },
+        "count": {
+          "type": "number",
+          "description": "Toplam etiket kullanım sıklığı/popülerliği"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Son güncellenme tarihi"
+        }
+      },
+      "required": ["tag", "count", "updatedAt"]
+    },
+    "Story": {
+      "title": "Story",
+      "description": "Halka açık olarak paylaşılan tamamlanmış hikayeler.",
+      "type": "object",
+      "properties": {
+        "postId": {
+          "type": "string",
+          "description": "Gönderi ID"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Paylaşan kullanıcı"
+        },
+        "userName": {
+          "type": "string",
+          "description": "Görünür ad"
+        },
+        "userPhoto": {
+          "type": "string",
+          "description": "Profil resmi"
+        },
+        "optionAUrl": {
+          "type": "string",
+          "description": "A görseli"
+        },
+        "optionBUrl": {
+          "type": "string",
+          "description": "B görseli"
+        },
+        "optionALabel": {
+          "type": "string",
+          "description": "A etiketi"
+        },
+        "optionBLabel": {
+          "type": "string",
+          "description": "B etiketi"
+        },
+        "title": {
+          "type": "string",
+          "description": "Gönderi başlığı"
+        },
+        "winnerOption": {
+          "type": "string",
+          "description": "Kazanan seçenek"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Paylaşılma zamanı"
+        }
+      },
+      "required": ["postId", "userId", "userName", "optionAUrl", "optionBUrl", "title", "createdAt"]
+    },
+    "Follow": {
+      "title": "Follow",
+      "description": "Kullanıcılar arası takip kaydı.",
+      "type": "object",
+      "properties": {
+        "followerId": {
+          "type": "string",
+          "description": "Takip eden kullanıcı ID"
+        },
+        "followerName": {
+          "type": "string",
+          "description": "Takip eden kullanıcı adı"
+        },
+        "followerPhoto": {
+          "type": "string",
+          "description": "Takip eden kullanıcı profil fotoğrafı"
+        },
+        "followingId": {
+          "type": "string",
+          "description": "Takip edilen kullanıcı ID"
+        },
+        "followingName": {
+          "type": "string",
+          "description": "Takip edilen kullanıcı adı"
+        },
+        "followingPhoto": {
+          "type": "string",
+          "description": "Takip edilen kullanıcı profil fotoğrafı"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Takip edilme tarihi"
+        }
+      },
+      "required": ["followerId", "followingId", "createdAt"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "Kullanıcıya özel etkinlik bildirimleri.",
+      "type": "object",
+      "properties": {
+        "notificationId": {
+          "type": "string",
+          "description": "Bildirim ID"
+        },
+        "recipientId": {
+          "type": "string",
+          "description": "Bildirimi alacak üye ID"
+        },
+        "senderId": {
+          "type": "string",
+          "description": "Aksiyonu gerçekleştiren üye ID"
+        },
+        "senderName": {
+          "type": "string",
+          "description": "Aksiyonu gerçekleştiren üye adı"
+        },
+        "senderPhoto": {
+          "type": "string",
+          "description": "Aksiyonu gerçekleştiren üye resmi"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["follow", "vote", "comment", "message"],
+          "description": "Bildirim çeşidi"
+        },
+        "postId": {
+          "type": "string",
+          "description": "Bildirimle ilişkili gönderi ID (varsa)"
+        },
+        "postTitle": {
+          "type": "string",
+          "description": "Bildirimle ilişkili gönderi başlığı (varsa)"
+        },
+        "read": {
+          "type": "boolean",
+          "description": "Okundu bilgisi"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Bildirim oluşturma tarihi"
+        }
+      },
+      "required": ["notificationId", "recipientId", "senderId", "senderName", "type", "read", "createdAt"]
+    },
+    "GlobalTrends": {
+      "title": "GlobalTrends",
+      "description": "Sistem genelindeki trend ve tüm zamanların en çok oylanan anketleri.",
+      "type": "object",
+      "properties": {
+        "trends": {
+          "type": "array",
+          "description": "Aktif trend listesi"
+        },
+        "top_all_time": {
+          "type": "array",
+          "description": "Tüm zamanların en çok oylananları listesi"
+        }
+      },
+      "required": ["trends", "top_all_time"]
+    },
+    "Shard": {
+      "title": "Shard",
+      "description": "Bölünmüş oy sayaçları (sharded counter).",
+      "type": "object",
+      "properties": {
+        "voteCountA": {
+          "type": "number",
+          "description": "Shard'daki A oy sayısı"
+        },
+        "voteCountB": {
+          "type": "number",
+          "description": "Shard'daki B oy sayısı"
+        }
+      },
+      "required": ["voteCountA", "voteCountB"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Gizli ve hassas kullanıcı bilgileri veri deposu."
+    },
+    "/profiles/{userId}": {
+      "schema": "Profile",
+      "description": "Kullanıcının herkesçe okunabilen genel profili."
+    },
+    "/groups/{groupId}": {
+      "schema": "Group",
+      "description": "Oyların kapalı devre yapıldığı özel gruplar."
+    },
+    "/groups/{groupId}/members/{userId}": {
+      "schema": "GroupMember",
+      "description": "Gruba dahil olan üyelerin listesi."
+    },
+    "/posts/{postId}": {
+      "schema": "Post",
+      "description": "Paylaşılan halka açık veya grup içi ikili karşılaştırma görsel gönderileri."
+    },
+    "/posts/{postId}/votes/{userId}": {
+      "schema": "Vote",
+      "description": "Gönderiye ait verilmiş oylar. Mükerrer oyu engeller."
+    },
+    "/posts/{postId}/shards/{shardId}": {
+      "schema": "Shard",
+      "description": "Bölünmüş oy sayaçları shard'ları."
+    },
+    "/posts/{postId}/comments/{commentId}": {
+      "schema": "Comment",
+      "description": "Bir post üzerinde yapılan bölünmüş sol/sağ yorumlar."
+    },
+    "/chats/{chatId}": {
+      "schema": "ChatRoom",
+      "description": "Kullanıcılar arası DM odaları."
+    },
+    "/chats/{chatId}/messages/{messageId}": {
+      "schema": "Message",
+      "description": "DM kutusu içindeki anlık real-time mesajlaşma verileri."
+    },
+    "/tags/{tag}": {
+      "schema": "Tag",
+      "description": "Hashtag indeksleri ve kullanım sıklığı."
+    },
+    "/stories/{storyId}": {
+      "schema": "Story",
+      "description": "Paylaşılan günlük hikayeler."
+    },
+    "/follows/{followId}": {
+      "schema": "Follow",
+      "description": "Kullanıcı takip bilgileri."
+    },
+    "/notifications/{notificationId}": {
+      "schema": "Notification",
+      "description": "Kullanıcının etkinlik bildirimleri."
+    },
+    "/system_stats/{statsId}": {
+      "schema": "GlobalTrends",
+      "description": "Sistem genelindeki trendlerin ve tüm zamanların popüler anketlerinin listesi."
+    }
+  }
+}

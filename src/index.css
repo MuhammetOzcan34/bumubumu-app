@@ -1,0 +1,131 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+body {
+  margin: 0;
+  height: 100%;
+  font-family: var(--font-sans);
+  background-color: #f8fafc;
+  color: #0f172a;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Dark mode overrides for body */
+.dark body, html.dark, .dark {
+  background-color: #080212 !important;
+  color: #F3F4F6 !important;
+}
+
+/* Custom Scrollbar styled matching fuchsia/purple logo */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+.dark ::-webkit-scrollbar-track {
+  background: #080212;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #1e0935;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #C13584;
+}
+
+/* Override utility backgrounds with premium logo theme colors specifically based on dark/light context */
+.dark .bg-slate-950 {
+  background-color: #090314 !important;
+}
+
+.dark .bg-slate-950\/80 {
+  background-color: rgba(9, 3, 20, 0.8) !important;
+}
+
+.dark .bg-slate-950\/95 {
+  background-color: rgba(9, 3, 20, 0.95) !important;
+}
+
+.dark .bg-slate-950\/40 {
+  background-color: rgba(9, 3, 20, 0.4) !important;
+}
+
+.dark .bg-\[\#18181B\] {
+  background-color: #12071f !important; /* Elegant dark-plum card container */
+}
+
+/* Light mode defaults for the class names to ensure consistency */
+.bg-slate-950 {
+  background-color: #f8fafc;
+}
+
+.bg-slate-950\/40 {
+  background-color: rgba(241, 245, 249, 0.6);
+}
+
+.bg-slate-950\/80 {
+  background-color: rgba(255, 255, 255, 0.9);
+}
+
+.bg-\[\#18181B\] {
+  background-color: #ffffff;
+}
+
+.border-white\/10 {
+  border-color: rgba(15, 23, 42, 0.08);
+}
+
+.dark .border-white\/10 {
+  border-color: rgba(225, 48, 108, 0.12) !important;
+}
+
+/* Post focus / highlight glow like the logo gradient border */
+.hover\:border-white\/15:hover {
+  border-color: rgba(15, 23, 42, 0.15);
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.05);
+}
+
+.dark .hover\:border-white\/15:hover {
+  border-color: rgba(225, 48, 108, 0.3) !important;
+  box-shadow: 0 12px 36px -12px rgba(193, 53, 132, 0.2) !important;
+}
+
+/* Highlight the active colors with gorgeous fuchsia-violet gradients */
+.text-transparent.bg-clip-text.bg-gradient-to-r.from-violet-500.via-indigo-400.to-amber-500 {
+  background-image: linear-gradient(to right, #E1306C, #C13584, #833AB4) !important;
+}
+.text-transparent.bg-clip-text.bg-gradient-to-r.from-violet-400.to-amber-300 {
+  background-image: linear-gradient(to right, #E1306C, #F77737) !important;
+}
+
+/* Entry Animation */
+.animate-scale-up {
+  animation: scaleUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes scaleUp {
+  from {
+    transform: scale(0.96);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
